@@ -4,6 +4,7 @@ from core.constant import MAIN_BTN, HANGHUI_BTN, PCRelement, TUANDUIZHAN_BTN, DX
 from core.constant import USER_DEFAULT_DICT as UDD
 from core.cv import UIMatcher
 from core.log_handler import pcr_log
+from core.safe_u2 import timeout
 from core.utils import diffday
 from ._tools import ToolsMixin
 
@@ -14,6 +15,7 @@ class HanghuiMixin(ToolsMixin):
     包含行会相关的脚本。
     """
 
+    @timeout(300, "行会捐赠用时过长，可能卡住！")
     def hanghui(self, once_times):
         """
         行会自动捐赠装备
@@ -413,37 +415,54 @@ class HanghuiMixin(ToolsMixin):
             pcr_log(self.account).write_log("info", f"{self.account}该用户未解锁行会战哦")
             return
         while True:
-            self.lock_img(img=TUANDUIZHAN_BTN["taofaxinxi"], elsedelay=2, elseclick=(1, 1), side_check=self.juqing_kkr)
-            try:
-                screen = self.getscreen()
-                r_list = self.img_where_all(img=TUANDUIZHAN_BTN["shangbiao"], screen=screen)
-                if self.lock_img(img=TUANDUIZHAN_BTN["tiaozhan"], elseclick=(int(r_list[0]), int(r_list[1])),
-                                 side_check=self.juqing_kkr):
-                    if self.is_exists(TUANDUIZHAN_BTN["tiaozhan"]):
-                        break
-            except Exception as e:
-                pcr_log(self.account).write_log("info", f"识别不到boss信息，已退出本任务")
-                return
+            if self.lock_img(img=TUANDUIZHAN_BTN["taofaxinxi"], elsedelay=2, elseclick=(1, 1),
+                             side_check=self.juqing_kkr):
+                time.sleep(5 + self.change_time)
+                try:
+                    self.lock_img(img=TUANDUIZHAN_BTN["taofaxinxi"], elsedelay=2, elseclick=(1, 1),
+                                  side_check=self.juqing_kkr)
+                    screen = self.getscreen()
+                    r_list = self.img_where_all(img=TUANDUIZHAN_BTN["shangbiao"], screen=screen)
+                    if self.lock_img(img=TUANDUIZHAN_BTN["tiaozhan"], elseclick=(int(r_list[0]), int(r_list[1])),
+                                     side_check=self.juqing_kkr):
+                        if self.is_exists(TUANDUIZHAN_BTN["tiaozhan"]):
+                            break
+                except Exception as e:
+                    pcr_log(self.account).write_log("info", f"识别不到boss信息，已退出本任务")
+                    return
             else:
                 continue
 
-        self.lock_no_img(TUANDUIZHAN_BTN["tiaozhan"], elseclick=(833, 462), retry=5)
-        if not self.is_exists(DXC_ELEMENT["quanbu_blue"]):
-            pcr_log(self.account).write_log("info", f"{self.account}该用户没次数")
-            self.lock_img(img=TUANDUIZHAN_BTN["taofaxinxi"], elsedelay=2, elseclick=(1, 1), side_check=self.juqing_kkr)
-            return
+        def tiaozhan():
+            # 非主流写法，内部方法
+            while True:
+                self.lock_no_img(TUANDUIZHAN_BTN["tiaozhan"], elseclick=[(430, 487), (833, 462)])
+                self.lock_img(DXC_ELEMENT["sheding"], ifclick=(478, 443), retry=3)
+                if self.is_exists(TUANDUIZHAN_BTN["qianwangguanqia"]):
+                    # self.lock_no_img(TUANDUIZHAN_BTN["qianwangguanqia"], elseclick=(592, 436))
+                    # 刷 1-1获取次数？
+                    pcr_log(self.account).write_log("info", f"没有挑战次数")
+                    self.lock_home()
+                    return
+                if self.is_exists('img/notzhandoukaishi.bmp', at=(758, 423, 915, 473), is_black=True, black_threshold=1500):
+                    # 全部
+                    self.click_btn(DXC_ELEMENT["quanbu_white"], until_appear=DXC_ELEMENT["quanbu_blue"], elsedelay=0.1)
+                    if not self.is_exists(DXC_ELEMENT["zhiyuan_gouxuan"]):
+                        for i in range(1, 9):
+                            self.click(DXC_ELEMENT["zhiyuan_dianren"][i])
+                            break
+                    else:
+                        # 点完人后确认一遍
+                        if self.is_exists('img/notzhandoukaishi.bmp', at=(758, 423, 915, 473), is_black=True,
+                                          black_threshold=1500):
+                            pcr_log(self.account).write_log(level='info', message="%s没有合适的人物打公会战!" % self.account)
+                            self.lock_home()
+                            return
+                        break
+                elif self.is_exists('img/dxc/zhandoukaishi.bmp', at=(758, 423, 915, 473)):
+                    break
 
-        if self.is_exists('img/notzhandoukaishi.bmp', at=(758, 423, 915, 473), is_black=True, black_threshold=1500):
-            # 全部
-            self.click_btn(DXC_ELEMENT["quanbu_white"], until_appear=DXC_ELEMENT["quanbu_blue"], elsedelay=0.1)
-            for i in range(1, 9):
-                self.click(DXC_ELEMENT["zhiyuan_dianren"][i])
-            # 点完人后确认一遍
-            if self.is_exists('img/notzhandoukaishi.bmp', at=(758, 423, 915, 473), is_black=True, black_threshold=1500):
-                pcr_log(self.account).write_log(level='info', message="%s没有合适的人物打公会战!" % self.account)
-                self.lock_home()
-                return
-
+        tiaozhan()
         while True:
             # 战斗开始
             self.click_btn(DXC_ELEMENT["zhandoukaishi"], until_disappear=DXC_ELEMENT["zhandoukaishi"], elsedelay=0.1)
@@ -454,12 +473,13 @@ class HanghuiMixin(ToolsMixin):
                 break
             if self.is_exists('img/caidan.jpg'):
                 break
+            if self.is_exists(TUANDUIZHAN_BTN["tiaozhan"]):
+                tiaozhan()
 
-        if self.lock_img('img/caidan.jpg', elseclick=[(1, 1)], retry=6):
-            self.lock_img('img/auto_1.jpg', elseclick=[(914, 425)], elsedelay=0.2, retry=3)
-            self.lock_img('img/kuaijin_2.bmp', elseclick=[(913, 494)], elsedelay=0.2, retry=3)
-        time.sleep(3)
         while True:
+            if self.lock_img('img/caidan.jpg', elseclick=[(1, 1)], retry=3):
+                self.lock_img('img/auto_1.jpg', elseclick=[(914, 425)], elsedelay=0.2, retry=3)
+                self.lock_img('img/kuaijin_2.bmp', elseclick=[(913, 494)], elsedelay=0.2, retry=3)
             if self.is_exists('img/shanghaibaogao.jpg', at=(767, 18, 948, 65)) and \
                     self.is_exists('img/xiayibu.jpg', at=(694, 474, 920, 535)):
                 self.lock_no_img('img/xiayibu.jpg', elseclick=[(806, 508)])

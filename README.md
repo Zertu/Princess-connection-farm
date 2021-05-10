@@ -1,8 +1,16 @@
  <img src="webclient/src/assets/logo.jpg" width = "80" height = "80" alt="LOGO" align=center />
 
- # Princess connection 公主连结农场脚本v2.5.20210302
+# Princess connection 公主连结农场脚本v2.6.20210510
 
 ![](https://img.shields.io/badge/license-GPL--3.0-blue)![](https://img.shields.io/badge/opencv-2.0-blue)![](https://img.shields.io/badge/UIAutomator-2-blue)
+
+## 警告：使用pull升级v2.6版本会强制删除config.ini，请提前做好备份
+
+config.ini已经加入.gitignore中，此后的所有版本config.ini都将动态生成（运行main_new.py即自动更新）。
+
+在v2.6.20210308版本中，将config.ini从仓库中移除，这将导致使用pull更新会强制删去本地的config.ini，请及时做好备份。
+
+备份方法：将config.ini的内容复制；git pull；将config.ini备份粘贴回去；运行main_new.py自动补全剩余。
 
 ## :bookmark_tabs:简介
 
@@ -79,6 +87,12 @@
 
 - 需要 Python **64位**版本>=3.6（安装时记得把带有**PATH**字母选项的勾上）**不要3.9！！！**
 
+- **Q:**我可以不要OCR吗？**A:**不行，以后只会对非OCR越来越不友好=。=
+
+- OCR 需求 [VS C++ Build Tool](https://download.microsoft.com/download/5/f/7/5f7acaeb-8363-451f-9425-68a90f98b238/visualcppbuildtools_full.exe) 和 [VC_redist.x64.exe](https://download.visualstudio.microsoft.com/download/pr/89a3b9df-4a09-492e-8474-8f92c115c51d/B1A32C71A6B7D5978904FB223763263EA5A7EB23B2C44A0D60E90D234AD99178/VC_redist.x64.exe)
+
+- 自行打开`requirements.txt`确认依赖无误
+
 - 先cd进项目目录下
 
 - 需要执行指令安装依赖（可能需要到`换源/科学上网`）:
@@ -105,13 +119,13 @@
 
 ## :loudspeaker:推送
 
-|          支持推送的API          | 是否可以交互 | 是否支持图片发送   | 支持‘不受限制’的文字发送 | 使用第三方服务API  | 衍生支持                                              |
-| :-----------------------------: | ------------ | ------------------ | ------------------------ | ------------------ | ----------------------------------------------------- |
-|      QQpush QQ:cold_sweat:      | :x:          | :x:                | :heavy_check_mark:       | :heavy_check_mark: | :x:                                                   |
-|      Wechat 微信（:hand:）      | :x:          | :x:                | :heavy_check_mark:       | :heavy_check_mark: | :x:                                                   |
-|         Wework 企业微信         | :x:          | :x:                | :heavy_check_mark:       | :heavy_check_mark: | APP Bark_IOS Wework群机器人 钉钉群机器人 飞书群机器人 |
-|         TG 电报（:+1:）         | :x:          | :heavy_check_mark: | :heavy_check_mark:       | :heavy_check_mark: | :x:                                                   |
-| **还在开发ing**【看群投票决定】 |              |                    |                          |                    |                                                       |
+|     支持推送的API     | 是否可以交互 | 是否支持图片发送   | 支持‘不受限制’的文字发送 | 使用第三方服务API  | 衍生支持                                              |
+| :-------------------: | ------------ | ------------------ | ------------------------ | ------------------ | ----------------------------------------------------- |
+| QQpush QQ:cold_sweat: | :x:          | :x:                | :heavy_check_mark:       | :heavy_check_mark: | :x:                                                   |
+| Wechat 微信（:hand:） | :x:          | :x:                | :heavy_check_mark:       | :heavy_check_mark: | :x:                                                   |
+|    Wework 企业微信    | :x:          | :x:                | :heavy_check_mark:       | :heavy_check_mark: | APP Bark_IOS Wework群机器人 钉钉群机器人 飞书群机器人 |
+|    TG 电报（:+1:）    | :x:          | :heavy_check_mark: | :heavy_check_mark:       | :heavy_check_mark: | :x:                                                   |
+|     QQBot[开发中]     |              |                    |                          |                    |                                                       |
 
 Tips:QQPush机器人经常换号 Wechat在4月底将全部弃用，转Wework
 
@@ -158,7 +172,7 @@ Tips:QQPush机器人经常换号 Wechat在4月底将全部弃用，转Wework
 - [x] 模拟器自启动控制
 - [x] 简化Schedule操作模式
 - [ ] WebGUI界面
-- [ ] 提高刷图效率
+- [x] 提高刷图效率
 - [ ] 刷活动本
 - [x] 女神祭
 - [ ] 跳过18图切图动画
@@ -170,6 +184,85 @@ Tips:QQPush机器人经常换号 Wechat在4月底将全部弃用，转Wework
 本项目仅供交流和学习使用，请勿用此从事 违法/商业盈利等，开发者团队拥有本项目的最终解释权
 
 ## :hammer:更新历史:wrench:
+
+<details>
+<summary>更新日志（点击展开）</summary>
+
+2021/5/9 By CyiceK
+
+- 修复自动搜寻模拟器-蓝叠的问题
+- 修复无法关闭活动剧情提示
+
+2021/4/22 By TheAutumnOfRice
+
+- 修复一些BUG
+- 修复JJC，PJJC
+
+2021/4/21 By TheAutumnOfRice
+
+- 修复图号识别，Normal Hard图特征
+- 修复跳过按钮图片
+- 新增通关地下城OCR，增加攒TP模式(mode 4)，借人参数(assist)
+
+2021/4/16 By TheAutumnOfRice
+
+- 试图提高选图稳定性
+- 进一步解决无限右上角问题
+
+2021/4/5 By CyiceK
+
+- 上线另一个本地OCR（Tr）`本地2`，需要安装新的依赖
+
+2021/4/5 By TheAutumnOfRice
+
+- 进一步增加OCR识别扫荡次数稳定性
+- 增加登录稳定性，进一步防止无限右上角
+- 给行会捐赠增加300s TimeOut，防止无限卡战斗
+
+2021/3/31 By TheAutumnOfRice
+
+- 更新到Ver2.6版本
+- 新增21图
+
+2021/3/25 By TheAutumnOfRice
+
+- 自动更新程序和Requirements的微调
+
+2021/3/24 By UVJkiNTQ
+
+- 添加了xlsx导出支持，可兼容pandas>=1.2.0
+- 移除了xls导出
+
+2021/3/16 By TheAutumnOfRice
+
+- 试图修复地下城5图问题
+- 增加地下城5图
+
+2021/3/9 By:TheAutumnOfRice
+
+- 新增`force_as_ocr_as_possible`一键修改所有任务为OCR任务
+- 新增OCR探索`r9-ocr`
+- 修复诸多BUG
+
+2021/3/8 By:TheAutumnOfRice
+
+- 使用Scenes框架解构方法
+- 内核使用FunctionChecker框架改写，增加稳定性
+- 增加了OCR刷图推图 `s9`
+- OCR增加效率 `s7-ocr` `s7-a-ocr`
+
+2021/3/5 By:Klarkxy
+
+- "r8购买经验" 新增参数"qianghuashi"，用来进行额外购买强化石。
+
+2021/3/4 By:TheAutumnOfRice
+
+- 修复升级/角色识别中的切换错误
+
+2021/3/3 By:TheAutumnOfRice
+
+- 增加更多调试句柄
+- 修复进入Hard图的问题
 
 2021/3/2 By:Klarkxy
 
@@ -698,3 +791,5 @@ Tips:QQPush机器人经常换号 Wechat在4月底将全部弃用，转Wework
 - 收取礼物函数优化了逻辑，去掉了全部收取按钮的锁定
 - 行会捐赠函数优化了逻辑，现在大概不会捐赠失败了
 - 地下城函数优化了逻辑增加了鲁棒性，加入跳过剧情/首次进入时已经进了地下城 两种情况的初始号的处理法
+
+</details>

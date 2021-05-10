@@ -57,6 +57,7 @@ class LoginMixin(BaseMixin):
         # 结构梳理下为：auth -> login_auth(是否需要实名认证<->login<->do_login[验证码处理]) -> init_home(lock_home)
         for retry in range(30):
             self._move_check()
+            self.click(945, 13)  # 防止卡住
             if self.d(resourceId="com.bilibili.priconne:id/bsgamesdk_id_tourist_switch").exists():
                 self.d(resourceId="com.bilibili.priconne:id/bsgamesdk_id_tourist_switch").click()
                 time.sleep(2)
@@ -192,7 +193,7 @@ class LoginMixin(BaseMixin):
                 if _id == 0:
                     time.sleep(4)
                     # 检测到题目id为0就重新验证
-                    return AutoCaptcha()
+                    AutoCaptcha()
 
                 state = self.lock_fun(PopFun, elseclick=START_UI["queren"], elsedelay=8, retry=5, is_raise=False)
 
@@ -276,19 +277,18 @@ class LoginMixin(BaseMixin):
             while True:
                 self._move_check()
                 try_count += 1
-                if try_count % 10 == 0 and try_count > 500:
+                if try_count % 5 == 0 and try_count > 10:
                     # 看一下会不会一直点右上角？
-                    if self.last_screen is not None:
-                        if self.is_exists(MAIN_BTN["liwu"], screen=self.last_screen):
-                            # 已经登陆了老哥！
-                            # 重 新 来 过
-                            self.log.write_log("error", "可能出现了狂点右上角错误，换号")
-                            self.lock_img(MAIN_BTN["liwu"], elseclick=MAIN_BTN["zhuye"], elsedelay=1)  # 回首页
-                            self.change_acc()
-                if try_count > 1000:
+                    if self.is_exists(MAIN_BTN["liwu"]):
+                        # 已经登陆了老哥！
+                        # 重 新 来 过
+                        self.log.write_log("error", "可能出现了狂点右上角错误，换号")
+                        self.lock_img(MAIN_BTN["liwu"], elseclick=MAIN_BTN["zhuye"], elsedelay=1)  # 回首页
+                        self.change_acc()
+                if try_count > 100:
                     # 点了1000次了，重启吧
                     error_flag = 1
-                    raise Exception("点了1000次右上角了，重启罢！")
+                    raise Exception("点了100次右上角了，重启罢！")
                 # todo 登陆失败报错：-32002 Client error: <> data: Selector [
                 #  resourceId='com.bilibili.priconne:id/bsgamesdk_id_welcome_change'], method: None
                 if self.d(resourceId="com.bilibili.priconne:id/bsgamesdk_edit_authentication_name").exists(timeout=0.1):
@@ -321,10 +321,11 @@ class LoginMixin(BaseMixin):
                     self.click(678, 377)  # 下载
             return self.do_login(ac, pwd)
         except Exception as e:
-            if error_flag:
-                raise e
-            # 异常重试登陆逻辑
-            return self.do_login(ac, pwd)
+            # if error_flag:
+            #     raise e
+            # # 异常重试登陆逻辑
+            # return self.login(ac, pwd)  # 修改无限重复BUG
+            raise e  # 应该报错的时候就应该报错，上面会处理的。
 
     @DEBUG_RECORD
     def auth(self, auth_name, auth_id):

@@ -36,11 +36,14 @@ if add_adb_to_path:
     env = abs_dir + ";" + env
     os.putenv("path", env)
 
+
 def _connect():  # 连接adb与uiautomator
     global FIRST_CONNECT
     try:
         if enable_auto_find_emulator:
-            port_list = check_known_emulators()
+            os.system(f"cd {adb_dir} & adb kill-server")
+            port_list = set(check_known_emulators())
+            # print(port_list)
             print("自动搜寻模拟器：" + str(port_list))
             for port in port_list:
                 os.system(f'cd {adb_dir} & adb connect ' + emulator_ip + ':' + str(port))
@@ -468,11 +471,12 @@ class PCRInitializer:
         """
         if len(task) == 3:
             task = (
-            0 - task[0] - rand_pri * (random() / 2 - 1), task[1], task[2], rec_addr, AutomatorRecorder.gettask(task[2]),
-            continue_)
+                0 - task[0] - rand_pri * (random() / 2 - 1), task[1], task[2], rec_addr,
+                AutomatorRecorder.gettask(task[2]),
+                continue_)
         else:
             task = (
-            0 - task[0] - rand_pri * (random() / 2 - 1), task[1], task[2], rec_addr, task[3], continue_)  # 最大优先队列
+                0 - task[0] - rand_pri * (random() / 2 - 1), task[1], task[2], rec_addr, task[3], continue_)  # 最大优先队列
         self._add_task(task)
 
     def add_tasks(self, tasks: list, continue_, rec_addr, rand_pri=False):
@@ -655,7 +659,7 @@ class PCRInitializer:
                                 print(q)
                         elif msg["method"] == "rec":
                             print(device.serial, " - Automator 执行记录：")
-                            for q in device.a.output_debug_info():
+                            for q in device.a.output_debug_info(msg["running"]):
                                 print(q)
                         else:
                             print(device.serial, " - 不认识的msg！", msg)
@@ -890,8 +894,8 @@ class PCRInitializer:
     def show_u2_record(self, device=None):
         self.send_message(device, {'method': 'u2rec'})
 
-    def show_debug_record(self, device=None):
-        self.send_message(device, {'method': 'rec'})
+    def show_debug_record(self, running=False, device=None):
+        self.send_message(device, {'method': 'rec', 'running': running})
 
     def stop(self, join=False, clear=False, force=False):
         if clear:

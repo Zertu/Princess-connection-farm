@@ -1,8 +1,10 @@
+import base64
 import time
 
 import cv2
 import psutil
 import requests
+from requests.adapters import HTTPAdapter
 
 from core.pcr_config import s_sckey, log_lev, log_cache, qqbot_key, qqbot_select, qq, qqbot_private_send_switch, \
     qqbot_group_send_switch, tg_token, tg_mute, debug, proxy_http, proxy_https
@@ -24,7 +26,11 @@ class Bot:
         self.qq = qq
         self.cpu_info = None
         self.memory_info = None
+        self.img_url = None
         self.qqbot_select = qqbot_select
+        self.req_post = requests.Session()
+        self.req_post.mount('http://', HTTPAdapter(max_retries=5))
+        self.req_post.mount('https://', HTTPAdapter(max_retries=5))
         # https://sctapi.ftqq.com/ server酱Turbo版本
         self.server_nike_url = f"http://sc.ftqq.com/{s_sckey}.send"
         self.lev_0 = ['info', 'warning', 'error', 'STATE', '']
@@ -62,7 +68,16 @@ class Bot:
         self.qqbot_url1 = self.private_url.get(f"{self.qqbot_select}_private_url", "")
         self.qqbot_url2 = self.group_url.get(f"{self.qqbot_select}_group_url", "")
 
-    def server_bot(self, s_level, message='', acc_state='', img=None, img_title=None):
+    def server_bot(self, s_level, message='', acc_state='', img=None, img_title=''):
+        """
+        消息推送
+        :param s_level:
+        :param message:
+        :param acc_state:
+        :param img: 必须为cv2格式，然后转为base64或者二进制流再post出去
+        :param img_title:
+        :return:
+        """
         if len(s_sckey) != 0 or len(qqbot_key) != 0 or len(tg_token) != 0:
             message = ''.join(message).replace('\n', '')
             if s_level in self.lev_dic[log_lev]:
@@ -72,7 +87,7 @@ class Bot:
                 # print(self.acc_message[s_level])
                 # print(len(self.acc_message[self.acc_name]))
                 # print(len(self.acc_message[s_level])//2, self.acc_message[s_level])
-            if s_level in self.lev_dic['3'] or (
+            if s_level in self.lev_3 or (
                     s_level in self.lev_dic[log_lev] and len(self.acc_message[s_level]) // 2 >= log_cache):
                 message = ''.join(self.acc_message[s_level]).replace(',', '\n').replace("'", '')
                 # print(message)
@@ -86,9 +101,9 @@ class Bot:
                 self.memory_info = "内存使用：%0.2fG||使用率%0.1f%%||剩余内存：%0.2fG" % (used_memory, memory_percent, free_memory)
                 # print(memory_info)
                 # 兼容老接口
-                if len(s_sckey) != 0:
+                if len(s_sckey) != 0 and img == '':
                     self.wechat_bot(s_level, message=message, acc_state=acc_state)
-                if len(qqbot_key) != 0:
+                if len(qqbot_key) != 0 and img == '':
                     self.qq_bot(s_level, message=message, acc_state=acc_state)
                 if len(tg_token) != 0:
                     self.tg_bot(s_level, message=message, acc_state=acc_state, img=img, img_title=img_title)
@@ -113,9 +128,9 @@ class Bot:
 
         }
         try:
-            requests.post(self.server_nike_url, proxies=BOT_PROXY, params=info)
+            self.req_post.post(self.server_nike_url, proxies=BOT_PROXY, params=info)
         except Exception as e:
-            pass
+            self.wechat_bot(s_level, message=message, acc_state=acc_state)
             # pcr_log("__SERVER_BOT__").write_log("error", f"ServerBot发送失败：{e}")
         # 不因为0级消息而清空消息队列
 
@@ -175,67 +190,90 @@ class Bot:
                     send, sent = self.info_cutting(CoolPush_info['c'])
                     while send is None:
                         tmp_dict = {'c': send}
-                        requests.post(self.qqbot_url1, proxies=BOT_PROXY, params=tmp_dict)
+                        self.req_post.post(self.qqbot_url1, proxies=BOT_PROXY, params=tmp_dict)
                         send, sent = self.info_cutting(sent)
                         time.sleep(0.3)
                     tmp_dict = {'c': sent}
-                    requests.post(self.qqbot_url1, proxies=BOT_PROXY, params=tmp_dict)
+                    self.req_post.post(self.qqbot_url1, proxies=BOT_PROXY, params=tmp_dict)
 
                 if qqbot_group_send_switch == 1:
                     send, sent = self.info_cutting(CoolPush_info['c'])
                     while send is not None:
                         tmp_dict = {'c': send}
-                        requests.post(self.qqbot_url2, proxies=BOT_PROXY, params=tmp_dict)
+                        self.req_post.post(self.qqbot_url2, proxies=BOT_PROXY, params=tmp_dict)
                         send, sent = self.info_cutting(sent)
                         time.sleep(0.3)
                     tmp_dict = {'c': sent}
-                    requests.post(self.qqbot_url2, proxies=BOT_PROXY, params=tmp_dict)
+                    self.req_post.post(self.qqbot_url2, proxies=BOT_PROXY, params=tmp_dict)
 
             elif self.qqbot_select == 'Qmsgnike':
                 if qqbot_private_send_switch == 1:
                     send, sent = self.info_cutting(Qmsgnike_info['msg'])
                     while send is None:
                         tmp_dict = {'msg': send, qq: self.qq}
-                        requests.post(self.qqbot_url1, proxies=BOT_PROXY, params=tmp_dict)
+                        self.req_post.post(self.qqbot_url1, proxies=BOT_PROXY, params=tmp_dict)
                         send, sent = self.info_cutting(sent)
                         time.sleep(0.3)
                     tmp_dict = {'msg': sent, qq: self.qq}
-                    requests.post(self.qqbot_url1, proxies=BOT_PROXY, params=tmp_dict)
+                    self.req_post.post(self.qqbot_url1, proxies=BOT_PROXY, params=tmp_dict)
                 if qqbot_group_send_switch == 1:
                     send, sent = self.info_cutting(Qmsgnike_info['msg'])
                     while send is None:
                         tmp_dict = {'msg': send, qq: self.qq}
-                        requests.post(self.qqbot_url2, proxies=BOT_PROXY, params=tmp_dict)
+                        self.req_post.post(self.qqbot_url2, proxies=BOT_PROXY, params=tmp_dict)
                         send, sent = self.info_cutting(sent)
                         time.sleep(0.3)
                     tmp_dict = {'msg': sent, qq: self.qq}
-                    requests.post(self.qqbot_url2, proxies=BOT_PROXY, params=tmp_dict)
+                    self.req_post.post(self.qqbot_url2, proxies=BOT_PROXY, params=tmp_dict)
         except Exception as e:
-            pass
+            self.qq_bot(s_level, message=message, acc_state=acc_state)
 
-    def tg_bot(self, s_level, message='', acc_state='', img=None, img_title=None):
+    def tg_bot(self, s_level, message='', acc_state='', img=None, img_title=''):
         # TG推送机器人 By:CyiceK
         # img传进来的是cv2格式
         if debug:
             print("Now TG BOT!")
         try:
+            # Markdown
             # To escape characters '_', '*', '`', '[' outside of an entity, prepend the characters '\' before them.
             message = message.replace('_', '\_').replace('*', '\*').replace('`', '\`').replace('[', '\[')
             acc_state = acc_state.replace('_', '\_').replace('*', '\*').replace('`', '\`').replace('[', '\[')
-            if img is not None:
-                up_img = cv2.imencode('.jpg', img)[1].tobytes()
-                f = {"smfile": up_img}
-                h = {
-                    "Authorization": "cPNUy9taJaKvLFJwC4hwirT2c5XOxp9Q",
-                }
-                r = requests.post('https://sm.ms/api/v2/upload', headers=h, files=f).json()
-                if r["code"] == "success":
-                    data = r.get("data")
-                    img_url = data["url"]
-                    img_delete = data["delete"]
-                else:
-                    pass
+            img_title = img_title.replace('_', '\_').replace('*', '\*').replace('`', '\`').replace('[', '\[')
 
+            if img is not None:
+
+                img_delete = ''
+                up_img = cv2.imencode('.jpg', img)[1].tobytes()
+
+                # 方案一：imgbb
+                img_h = {
+                    "Connection": "keep-alive",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                }
+                base64_str = base64.b64encode(up_img)
+                data = {
+                    "key": '91ae4105b8d04d8ecf82238c234dbc2a',
+                    "expiration": '60',
+                    "image": base64_str,
+                }
+                r = self.req_post.post('https://api.imgbb.com/1/upload', data=data, headers=img_h).json()
+                if r['status'] == 200:
+                    data = r.get("data")
+                    self.img_url = data["url"]
+                    # img_delete = data["delete_url"]
+                else:
+                    # 方案二：sm.ms
+                    f = {"smfile": up_img}
+                    h = {
+                        "Authorization": "cPNUy9taJaKvLFJwC4hwirT2c5XOxp9Q"
+                    }
+                    r = self.req_post.post('https://sm.ms/api/v2/upload', headers=h, files=f).json()
+                    if r["code"] == "success":
+                        data = r.get("data")
+                        self.img_url = data["url"]
+                        img_delete = data["delete"]
+                    else:
+                        pass
                 img_h = {
                     "Connection": "keep-alive",
                     "Content-Type": "application/x-www-form-urlencoded",
@@ -244,13 +282,15 @@ class Bot:
                     'fun': 'sendPhoto',
                     'token': tg_token,
                     'caption': img_title,
-                    'photo': img_url,
+                    'photo': self.img_url,
                     'disable_notification': tg_mute,
                 }
 
-                requests.post('https://tgmessage-cyicek.vercel.app/api', headers=img_h, data=tg_imginfo)
-                time.sleep(1)
-                requests.get(url=img_delete, proxies=BOT_PROXY, headers=h)
+                self.req_post.post('https://tgmessage-cyicek.vercel.app/api', headers=img_h, data=tg_imginfo)
+
+                if img_delete != '':
+                    time.sleep(0.8)
+                    self.req_post.get(url=img_delete, proxies=BOT_PROXY, headers=h)
             else:
                 tg_textinfo = {
                     'token': tg_token,
@@ -269,9 +309,11 @@ class Bot:
                     print("TG Ready to Send!")
                     print("DATA:")
                     print(tg_textinfo)
-                r = requests.post('https://tgmessage-cyicek.vercel.app/api', proxies=BOT_PROXY, data=tg_textinfo)
+                r = self.req_post.post('https://tgmessage-cyicek.vercel.app/api', proxies=BOT_PROXY, data=tg_textinfo)
                 if debug:
                     print("Get:", r)
 
         except Exception as e:
             print('TG推送服务器错误', e)
+            self.tg_bot(s_level, message=message, acc_state=acc_state, img=img, img_title=img_title)
+
